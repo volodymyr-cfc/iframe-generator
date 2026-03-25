@@ -1,63 +1,161 @@
-import Image from "next/image";
+"use client";
+
+import React, { useState } from 'react';
 
 export default function Home() {
+  const [code, setCode] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [blockId, setBlockId] = useState<string | null>(null);
+
+  const handleGenerate = async () => {
+    if (!code.trim()) return;
+    
+    setLoading(true);
+    try {
+      const response = await fetch('/api/blocks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      });
+
+      if (!response.ok) throw new Error('Failed to save block');
+
+      const data = await response.json();
+      setBlockId(data.id);
+    } catch (error) {
+      console.error(error);
+      alert('Failed to generate iframe. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const copyToClipboard = () => {
+    if (!blockId) return;
+    const iframeCode = `<iframe src="${window.location.origin}/embed/${blockId}" width="100%" height="600" style="border:none; border-radius: 8px; overflow: hidden;"></iframe>`;
+    navigator.clipboard.writeText(iframeCode);
+    alert('Snippet copied to clipboard!');
+  };
+
+  const handleReset = () => {
+    setBlockId(null);
+    setCode('');
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div className="min-h-screen bg-slate-900 text-white font-sans selection:bg-indigo-500/30">
+      {/* Dynamic Background */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-600/20 blur-[120px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-blue-600/20 blur-[120px]" />
+      </div>
+
+      <main className="max-w-6xl mx-auto px-6 py-12 md:py-20 lg:px-8">
+        <header className="mb-12 text-center md:text-left">
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400 mb-4">
+            Vibe Code to IFrame
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="text-lg md:text-xl text-slate-400 max-w-2xl">
+            Seamlessly convert your AI-generated data visualizations into isolated, embeddable `{'<iframe>'}` snippets for your WordPress site.
           </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        </header>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          
+          {/* Input Section */}
+          <div className="flex flex-col h-full bg-slate-800/50 border border-slate-700/50 backdrop-blur-xl rounded-2xl p-6 shadow-2xl transition-all duration-300 hover:border-slate-600/50">
+            <label htmlFor="code-input" className="text-sm font-semibold text-slate-300 mb-3 block">
+              Paste your raw HTML/React Code
+            </label>
+            <div className="relative flex-grow">
+              <textarea
+                id="code-input"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder="<html>...</html>"
+                className="w-full h-[400px] lg:h-[500px] p-4 bg-slate-900/80 text-indigo-200 font-mono text-sm leading-relaxed rounded-xl border border-slate-700/50 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 resize-none transition-all placeholder:text-slate-600"
+                spellCheck="false"
+              />
+            </div>
+            
+            <button
+              onClick={handleGenerate}
+              disabled={loading || !code.trim()}
+              className="mt-6 w-full py-3 px-4 bg-gradient-to-r from-indigo-600 to-blue-500 hover:from-indigo-500 hover:to-blue-400 disabled:from-slate-700 disabled:to-slate-700 disabled:text-slate-500 disabled:cursor-not-allowed text-white font-bold rounded-xl shadow-lg shadow-indigo-500/25 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+            >
+              {loading ? (
+                <span className="animate-pulse">Processing...</span>
+              ) : (
+                'Generate Iframe Snippet'
+              )}
+            </button>
+          </div>
+
+          {/* Output / Preview Section */}
+          <div className="flex flex-col h-full space-y-6">
+            
+            {/* Snippet Card */}
+            <div className={`bg-slate-800/50 border border-slate-700/50 backdrop-blur-xl rounded-2xl p-6 shadow-2xl transition-all duration-500 ${blockId ? 'opacity-100 translate-y-0' : 'opacity-50 translate-y-2 pointer-events-none'}`}>
+              <h2 className="text-lg font-bold text-white mb-2 flex items-center justify-between">
+                Your Embed Snippet
+                {blockId && (
+                  <span className="text-xs font-mono bg-indigo-500/20 text-indigo-300 px-2 py-1 rounded-md border border-indigo-500/20">
+                    ID: {blockId}
+                  </span>
+                )}
+              </h2>
+              <p className="text-sm text-slate-400 mb-4">
+                Copy this code and paste it into WordPress (or any CMS) as Custom HTML.
+              </p>
+              
+              <div className="relative group">
+                <code className="block w-full bg-slate-900/80 p-4 rounded-xl text-emerald-400 font-mono text-sm border border-slate-700/50 overflow-x-auto whitespace-nowrap">
+                  {blockId 
+                    ? `<iframe src="${window.location.origin}/embed/${blockId}" width="100%" height="600" style="border:none; border-radius: 8px; overflow: hidden;"></iframe>` 
+                    : '<iframe src="..." width="100%" height="600" style="border:none;"></iframe>'}
+                </code>
+                
+                {blockId && (
+                  <button
+                    onClick={copyToClipboard}
+                    className="absolute top-1/2 -translate-y-1/2 right-3 opacity-0 group-hover:opacity-100 bg-slate-700 hover:bg-slate-600 text-white p-2 rounded-lg transition-all"
+                    title="Copy to clipboard"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Live Preview Card */}
+            <div className={`flex-grow flex flex-col bg-slate-800/50 border border-slate-700/50 backdrop-blur-xl rounded-2xl p-6 shadow-2xl transition-all duration-500 ${blockId ? 'opacity-100 translate-y-0' : 'opacity-50 translate-y-2 pointer-events-none'}`}>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-bold text-white">Live Preview</h2>
+                {blockId && (
+                  <button onClick={handleReset} className="text-sm text-slate-400 hover:text-white transition-colors">
+                    Start Over
+                  </button>
+                )}
+              </div>
+              <div className="w-full flex-grow bg-white rounded-xl overflow-hidden border border-slate-700 shadow-inner min-h-[300px] relative">
+                {blockId ? (
+                  <iframe 
+                    src={`/embed/${blockId}`}
+                    className="w-full h-full absolute inset-0" 
+                    style={{ border: 'none' }} 
+                    title="Live Preview"
+                  />
+                ) : (
+                  <div className="w-full h-full absolute inset-0 flex items-center justify-center bg-slate-100">
+                    <p className="text-slate-400 font-medium">Waiting for code to generate preview...</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+          </div>
         </div>
       </main>
     </div>
