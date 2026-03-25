@@ -1,42 +1,37 @@
-import fs from 'fs';
-import path from 'path';
+import { createClient } from '@supabase/supabase-js';
 
-// Define the shape of our block data
 export interface BlockData {
   id: string;
   code: string;
-  createdAt: number;
+  created_at: string;
 }
 
-// Ensure the data directory exists
-const DATA_DIR = path.join(process.cwd(), 'data');
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-}
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+console.log('Supabase URL:', supabaseUrl);
+console.log('Supabase Anon Key:', supabaseAnonKey ? supabaseAnonKey.slice(0, 8) + '...' : undefined);
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export async function saveBlock(code: string): Promise<string> {
-  // Generate a random ID for the block
-  const id = Math.random().toString(36).substring(2, 10);
-  
-  const block: BlockData = {
-    id,
-    code,
-    createdAt: Date.now()
-  };
-
-  const filePath = path.join(DATA_DIR, `${id}.json`);
-  fs.writeFileSync(filePath, JSON.stringify(block, null, 2), 'utf-8');
-
-  return id;
+  const { data, error } = await supabase
+    .from('blocks')
+    .insert([{ code }])
+    .select('id')
+    .single();
+  if (error || !data) {
+    console.error('Supabase insert error:', error);
+    throw new Error('Failed to save block');
+  }
+  return data.id;
 }
 
 export async function getBlock(id: string): Promise<BlockData | null> {
-  const filePath = path.join(DATA_DIR, `${id}.json`);
-  
-  if (!fs.existsSync(filePath)) {
-    return null;
-  }
-
-  const fileContent = fs.readFileSync(filePath, 'utf-8');
-  return JSON.parse(fileContent) as BlockData;
+  const { data, error } = await supabase
+    .from('blocks')
+    .select('*')
+    .eq('id', id)
+    .single();
+  if (error || !data) return null;
+  return data as BlockData;
 }
