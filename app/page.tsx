@@ -1,11 +1,19 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+
 
 export default function Home() {
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [blockId, setBlockId] = useState<string | null>(null);
+  const [origin, setOrigin] = useState('');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setOrigin(window.location.origin);
+    }
+  }, []);
 
   const handleGenerate = async () => {
     if (!code.trim()) return;
@@ -32,7 +40,7 @@ export default function Home() {
 
   const copyToClipboard = () => {
     if (!blockId) return;
-    const iframeCode = `<iframe src="${window.location.origin}/embed/${blockId}" width="100%" height="600" style="border:none; border-radius: 8px; overflow: hidden;"></iframe>`;
+    const iframeCode = `<iframe src="${origin}/embed/${blockId}" width="100%" height="600" style="border:none; border-radius: 8px; overflow: hidden;"></iframe>`;
     navigator.clipboard.writeText(iframeCode);
     alert('Snippet copied to clipboard!');
   };
@@ -64,9 +72,29 @@ export default function Home() {
           
           {/* Input Section */}
           <div className="flex flex-col h-full bg-slate-800/50 border border-slate-700/50 backdrop-blur-xl rounded-2xl p-6 shadow-2xl transition-all duration-300 hover:border-slate-600/50">
-            <label htmlFor="code-input" className="text-sm font-semibold text-slate-300 mb-3 block">
-              Paste your raw HTML/React Code
-            </label>
+            <div className="flex items-center mb-3 gap-2">
+              <label htmlFor="code-input" className="text-sm font-semibold text-slate-300 block">
+                Paste your raw HTML/React Code
+              </label>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    const text = await navigator.clipboard.readText();
+                    setCode(text);
+                  } catch (err) {
+                    alert('Failed to read clipboard.');
+                  }
+                }}
+                className="ml-4 flex items-center gap-2 px-5 py-2 text-base font-bold bg-gradient-to-r from-indigo-500 to-blue-500 hover:from-indigo-400 hover:to-blue-400 text-white rounded-xl shadow-lg border border-indigo-600/40 focus:outline-none focus:ring-2 focus:ring-indigo-400/50 transition-all active:scale-[0.98]"
+                title="Paste from clipboard"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                Paste
+              </button>
+            </div>
             <div className="relative flex-grow">
               <textarea
                 id="code-input"
@@ -111,7 +139,7 @@ export default function Home() {
               <div className="relative group">
                 <code className="block w-full bg-slate-900/80 p-4 rounded-xl text-emerald-400 font-mono text-sm border border-slate-700/50 overflow-x-auto whitespace-nowrap">
                   {blockId 
-                    ? `<iframe src="${window.location.origin}/embed/${blockId}" width="100%" height="600" style="border:none; border-radius: 8px; overflow: hidden;"></iframe>` 
+                    ? `<iframe src="${origin}/embed/${blockId}" width="100%" height="600" style="border:none; border-radius: 8px; overflow: hidden;"></iframe>` 
                     : '<iframe src="..." width="100%" height="600" style="border:none;"></iframe>'}
                 </code>
                 
